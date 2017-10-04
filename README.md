@@ -60,7 +60,7 @@ define(['cache'], function (cache) {
 
 ## Versioning
 
-For the versions available, see the [tags on this repository](https://github.com/CedrickOka/cachejs/releases).
+For the versions available, see the [tags on this repository](/tags).
 
 ## Licensing
 
