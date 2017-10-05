@@ -29,7 +29,11 @@ Cache.js is available on [github.com](https://github.com/CedrickOka/cachejs).
     });
 
     cache.write('cachejs', {foo: 'foo'});
-    var data = cache.read('cachejs');
+
+    if (cache.has('cachejs')) {
+    	var data = cache.read('cachejs');
+    	console.log(data);
+    }
 </script>
 ```
 
@@ -54,7 +58,11 @@ define(['cache'], function (cache) {
     });
 
     cache.write('cachejs', {foo: 'foo'});
-    var data = cache.read('cachejs');
+
+    if (cache.has('cachejs')) {
+    	var data = cache.read('cachejs');
+    	console.log(data);
+    }
 });
 ```
 
