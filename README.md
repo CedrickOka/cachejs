@@ -5,6 +5,8 @@
 
 Cachejs is a library that will allow you to set up a private and powerful cache system in your javascript application.
 
+[![GitHub version](https://badge.fury.io/gh/CedrickOka%2Fcachejs@2x.png)](https://badge.fury.io/gh/CedrickOka%2Fcachejs)
+
 ## Installing / Getting started
 
 If you want to try the sample codes below, just open your browser's console and enter them.

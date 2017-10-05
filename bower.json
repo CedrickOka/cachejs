@@ -1,0 +1,30 @@
+{
+  "name": "cachejs",
+  "description": "Cachejs is a library that will allow you to set up a private and powerful cache system in your javascript application.",
+  "main": [
+    "cache.js"
+  ],
+  "moduleType": [
+    "amd",
+    "globals"
+  ],
+  "keywords": [
+    "cache",
+    "LocalStorage",
+    "SessionStorage"
+  ],
+  "authors": [
+    "Cedrick Oka Baidai <okacedrick@gmail.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+    "cachejs.sublime-project",
+    "cachejs.sublime-workspace"
+  ],
+  "homepage": "https://github.com/CedrickOka/cachejs"
+}
