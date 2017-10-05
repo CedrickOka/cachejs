@@ -8,6 +8,7 @@ Cachejs is a library that will allow you to set up a private and powerful cache 
 ## Installing / Getting started
 
 If you want to try the sample codes below, just open your browser's console and enter them.
+
 Cache.js is available on [github.com](https://github.com/CedrickOka/cachejs).
 
 ### Browser
@@ -15,7 +16,6 @@ Cache.js is available on [github.com](https://github.com/CedrickOka/cachejs).
 ```html
 <script type="text/javascript" src="cache.js"></script>
 <script>
-    moment().format();
     var cache = new Cache.Memory(25, 300);
 
     cache.onWrite(function(key, data){
