@@ -48,7 +48,9 @@ require.config({
 	}
 });
 
-define(['cache'], function (cache) {
+define(['cache'], function (Cache) {
+    var cache = new Cache.Memory(25, 300);
+    
 	cache.onWrite(function(key, data){
     	console.log('An entry has been added to the cache with the key "' + key + '" : ');
     	console.log(data);
