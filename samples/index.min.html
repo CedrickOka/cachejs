@@ -1,0 +1,44 @@
+<!doctype html>
+<html> <head><title>Cache JS</title></head> <body> <script src=../cache.js type=text/javascript></script> <script type=text/javascript>
+			var todos = [
+				{
+					title: 'Cake PHP',
+					content: 'Install Cake PHP',
+					startAt: new Date()
+				},
+				{
+					title: 'Symonfy 2',
+					content: 'Install Symonfy 2',
+					startAt: new Date()
+				},
+				{
+					title: 'Symonfy 3',
+					content: 'Install Symonfy 3',
+					startAt: new Date()
+				}
+			];
+
+			var cache = new Cache.SessionStorage(25, 10);
+
+			cache.onRemove(function(key, data){
+				alert('key: ' + key + ' has been removed!');
+				console.log(data);
+			});
+
+			cache.onGarbage(function(key, data){
+				alert('key: ' + key + ' has been garbaged!');
+				// this.write(key, data);
+				console.log(data);
+			});
+
+			var callback = function(key, data){
+				alert('Il ne faudra pas lancer cet alerte.');
+			};
+
+			cache.on('cache:garbage', callback);
+			cache.off('cache:garbage', callback);
+			cache.onGarbage(callback);
+			cache.offGarbage(callback);
+
+			cache.write('todos', todos);
+		</script> </body> </html> 

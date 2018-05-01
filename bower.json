@@ -18,11 +18,16 @@
   ],
   "license": "MIT",
   "ignore": [
+    "*",
     "**/.*",
-    "node_modules",
-    "bower_components",
+    "!/README.*",
+    "!/LICENSE.*",
+    "!/CHANGELOG.*",
+    "!/CONTRIBUTING.*",
     "test",
     "tests",
+    "node_modules",
+    "bower_components",
     "cachejs.sublime-project",
     "cachejs.sublime-workspace"
   ],

@@ -34,23 +34,28 @@
 	 * 
 	 * @param number size | Cache size
 	 * @param number lifetime | Cache time to live in seconds
+	 * @param string prefix | Cache key prefix
 	 */
-	var Cache = function(size, lifetime){
+	var Cache = function(size, lifetime, prefix){
 		/**
 		 * @var number _size
 		 */
-		var _size = (typeof size == 'number' && size > 1) ? size : 5;
+		var _size = (typeof size === 'number' && size > 1) ? size : 5;
 		
 		/**
 		 * @var number _lifetime secondes
 		 */
-		var _lifetime = (typeof lifetime == 'number' && lifetime > 0) ? (lifetime * LIFETIME_UNITS) : 0;
+		var _lifetime = (typeof lifetime === 'number' && lifetime > 0) ? (lifetime * LIFETIME_UNITS) : 0;
+		
+		/**
+		 * @var string _prefix
+		 */
+		var _prefix = prefix || '';
 		
 		/**
 		 * @var array Events handler collection
 		 */
 		var _callbacks = {};
-		
 		_callbacks[EVENT_READ] = [];
 		_callbacks[EVENT_WRITE] = [];
 		_callbacks[EVENT_WRITE_CREATE] = [];
@@ -58,6 +63,15 @@
 		_callbacks[EVENT_REMOVE] = [];
 		_callbacks[EVENT_PURGE] = [];
 		_callbacks[EVENT_GARBAGE] = [];
+
+		/**
+		 * Get event name in namespace
+		 * 
+		 * @return string
+		 */
+		var __getEventName = function(eventName){
+			return _namespace + ':' + eventName;
+		};
 		
 		/**
 		 * Get cache size
@@ -106,7 +120,25 @@
 		 * @return number
 		 */
 		this.convertLifetime = function(lifetime){
-			return (typeof lifetime == 'number') ? (lifetime * LIFETIME_UNITS) : this.getLifetime();
+			return (typeof lifetime === 'number') ? (lifetime * LIFETIME_UNITS) : this.getLifetime();
+		};
+
+		/**
+		 * Get cache keys prefix
+		  *
+		 * @return string The keys prefix
+		 */
+		this.getPrefix = function(){
+			return _prefix;
+		};
+
+		/**
+		 * Get cache store keys prefix
+		  *
+		 * @return string The keys prefix
+		 */
+		this.getStoreKey = function(key){
+			return _prefix + key;
 		};
 		
 		/**
@@ -122,7 +154,7 @@
 			
 			if (lifetime > 0) {
 				timeoutID = setTimeout(function(){
-					self.remove(key);
+					self.remove(key, {silent: true});
 					self.trigger(EVENT_GARBAGE, key, value);
 				}, lifetime);
 			}
@@ -151,11 +183,11 @@
 		this.trigger = function(eventName, key, data){
 			if (eventName in _callbacks) {
 				for (var i = 0; i < _callbacks[eventName].length; i++) {
-					(function(fn, context){
-						if (typeof fn == 'function') {
-							setTimeout(function(fn, context, key, data){
-								fn.call(context, key, data);
-							}, 0, fn, context, key, data);
+					(function(callback, context){
+						if (typeof callback === 'function') {
+							setTimeout(function(callback, context, key, data){
+								callback.call(context, key, data);
+							}, 0, callback, context, key, data);
 						}
 					})(_callbacks[eventName][i][0], _callbacks[eventName][i][1]);
 				}
@@ -166,12 +198,12 @@
 		 * Register handler on event
 		 * 
 		 * @param string eventName
-		 * @param Function fn
+		 * @param Function callback
 		 * @param Object context
 		 */
-		this.on = function(eventName, fn, context){
+		this.on = function(eventName, callback, context){
 			if (eventName in _callbacks) {
-				_callbacks[eventName].push([fn, context]);
+				_callbacks[eventName].push([callback, context || this]);
 			}
 			return this;
 		};
@@ -180,16 +212,16 @@
 		 * Unregister handler on event
 		 * 
 		 * @param string eventName
-		 * @param Function fn
+		 * @param Function callback
 		 */
-		this.off = function(eventName, fn){
+		this.off = function(eventName, callback){
 			if (eventName in _callbacks) {
-				if (!fn) {
+				if (typeof callback === 'undefined') {
 					_callbacks[eventName] = [];
 				} else {
 					for (var i = 0; i < _callbacks[eventName].length; i++) {
-						if (_callbacks[eventName][i][0] === fn) {
-							delete _callbacks[eventName][i];
+						if (_callbacks[eventName][i][0] === callback) {
+							_callbacks[eventName].splice(i, 1);
 						}
 					}
 				}
@@ -200,84 +232,84 @@
 		/**
 		 * Helper for register handler on read event
 		 * 
-		 * @param Function fn
+		 * @param Function callback
 		 * @param Object context
 		 */
-		this.onRead = function(fn, context){
-			this.on(EVENT_READ, fn, context || this);
+		this.onRead = function(callback, context){
+			this.on(EVENT_READ, callback, context);
 			return this;
 		};
 
 		/**
 		 * Helper for unregister handler on read event
 		 * 
-		 * @param Function fn
+		 * @param Function callback
 		 */
-		this.offRead = function(fn){
-			this.off(EVENT_READ, fn);
+		this.offRead = function(callback){
+			this.off(EVENT_READ, callback);
 			return this;
 		};
 
 		/**
 		 * Helper for register handler on write event
 		 * 
-		 * @param Function fn
+		 * @param Function callback
 		 * @param Object context
 		 */
-		this.onWrite = function(fn, context){
-			this.on(EVENT_WRITE, fn, context || this);
+		this.onWrite = function(callback, context){
+			this.on(EVENT_WRITE, callback, context);
 			return this;
 		};
 
 		/**
 		 * Helper for unregister handler on write event
 		 * 
-		 * @param Function fn
+		 * @param Function callback
 		 */
-		this.offWrite = function(fn){
-			this.off(EVENT_WRITE, fn);
+		this.offWrite = function(callback){
+			this.off(EVENT_WRITE, callback);
 			return this;
 		};
 
 		/**
 		 * Helper for register handler on remove event
 		 * 
-		 * @param Function fn
+		 * @param Function callback
 		 * @param Object context
 		 */
-		this.onRemove = function(fn, context){
-			this.on(EVENT_REMOVE, fn, context || this);
+		this.onRemove = function(callback, context){
+			this.on(EVENT_REMOVE, callback, context);
 			return this;
 		};
 
 		/**
 		 * Helper for unregister handler on remove event
 		 * 
-		 * @param Function fn
+		 * @param Function callback
 		 */
-		this.offRemove = function(fn){
-			this.off(EVENT_REMOVE, fn);
+		this.offRemove = function(callback){
+			this.off(EVENT_REMOVE, callback);
 			return this;
 		};
 
 		/**
 		 * Helper for register handler on garbage event
 		 * 
-		 * @param Function fn
+		 * @param Function callback
 		 * @param Object context
 		 */
-		this.onGarbage = function(fn, context){
-			this.on(EVENT_GARBAGE, fn, context || this);
+		this.onGarbage = function(callback, context){
+			this.on(EVENT_GARBAGE, callback, context);
 			return this;
 		};
 
 		/**
 		 * Helper for unregister handler on garbage event
 		 * 
-		 * @param Function fn
+		 * @param Function callback
 		 */
-		this.offGarbage = function(fn){
-			this.off(EVENT_GARBAGE, fn);
+		this.offGarbage = function(callback){
+			this.off(EVENT_GARBAGE, callback);
 			return this;
 		};
 		
@@ -286,7 +318,9 @@
 		 * 
 		 * @return number
 		 */
-		this.count = function(){};
+		this.count = function(){
+			throw 'This method must be defined.';
+		};
 		
 		/**
 		 * Has key in cache storage unit
@@ -294,7 +328,9 @@
 		 * @param string key
 		 * @return boolean
 		 */
-		this.has = function(key){};
+		this.has = function(key){
+			throw 'This method must be defined.';
+		};
 		
 		/**
 		 * Has value in cache storage unit
@@ -302,7 +338,9 @@
 		 * @param mixed value
 		 * @return boolean
 		 */
-		this.hasValue = function(value){};
+		this.hasValue = function(value){
+			throw 'This method must be defined.';
+		};
 
 		/**
 		 * Read value of key in cache storage unit
@@ -311,14 +349,18 @@
 		 * @param mixed defaultValue
 		 * @return mixed
 		 */
-		this.read = function(key, defaultValue, options){};
+		this.read = function(key, defaultValue, options){
+			throw 'This method must be defined.';
+		};
 		
 		/**
 		 * Read all data
 		 * 
 		 * @return Object
 		 */
-		this.readAll = function(){};
+		this.readAll = function(){
+			throw 'This method must be defined.';
+		};
 
 		/**
 		 * Write in cache storage
@@ -328,7 +370,9 @@
 		 * @param number lifetime
 		 * @return Cache
 		 */
-		this.write = function(key, value, lifetime, options){};
+		this.write = function(key, value, lifetime, options){
+			throw 'This method must be defined.';
+		};
 		
 		/**
 		 * Remove key of cache storage
@@ -336,14 +380,18 @@
 		 * @param string key
 		 * @return Cache
 		 */
-		this.remove = function(key, options){};
+		this.remove = function(key, options){
+			throw 'This method must be defined.';
+		};
 		
 		/**
 		 * Purge cache storage
 		 * 
 		 * @return Cache
 		 */
-		this.purge = function(options){};
+		this.purge = function(options){
+			throw 'This method must be defined.';
+		};
 		
 		/**
 		 * Set lifetime for cache entry
@@ -351,7 +399,9 @@
 		 * @param string key
 		 * @param number lifetime in seconds
 		 */
-		this.setCacheLifetime = function(key, lifetime){};
+		this.setCacheLifetime = function(key, lifetime){
+			throw 'This method must be defined.';
+		};
 	};
 		
 	/**
@@ -395,27 +445,26 @@
 		
 		this.read = function(key, defaultValue, options){
 			options || (options = {});
-			
 			for (var i = 0; i < _storage.length; i++) {
 				if (_storage[i].key === key) {
-					if (typeof options.silent == 'undefined' || options.silent == false) {
+					if (typeof options.silent === 'undefined' || false === options.silent) {
 						this.trigger(EVENT_READ, key, _storage[i].value);
 					}
 					
 					return _storage[i].value;
 				}
 			}
-			return (typeof defaultValue == 'undefined') ? null : defaultValue;
+
+			return (typeof defaultValue === 'undefined') ? null : defaultValue;
 		};
 		
 		this.readAll = function(){
-			var attributes = {};
-			
+			var values = {};
 			for (var i = 0; i < _storage.length; i++) {
-				attributes[_storage[i].key] = _storage[i].value;
+				values[_storage[i].key] = _storage[i].value;
 			}
 			
-			return attributes;
+			return values;
 		};
 		
 		this.write = function(key, value, lifetime, options){
@@ -434,7 +483,7 @@
 					_storage[i].value = value;
 					_storage[i].timeoutID = this.scheduleStorageGarbage(key, value, _storage[i].lifetime);
 					
-					if (typeof options.silent == 'undefined' || options.silent == false) {
+					if (typeof options.silent === 'undefined' || options.silent == false) {
 						// execute register callback
 						this.trigger(EVENT_WRITE, key, value);
 						this.trigger(EVENT_WRITE_UPDATE, key, value);
@@ -460,7 +509,7 @@
 				timeoutID: this.scheduleStorageGarbage(key, value, lifetime)
 			});
 			
-			if (typeof options.silent == 'undefined' || options.silent == false) {
+			if (typeof options.silent === 'undefined' || options.silent == false) {
 				// execute register callback
 				this.trigger(EVENT_WRITE, key, value);
 				this.trigger(EVENT_WRITE_CREATE, key, value);
@@ -475,9 +524,9 @@
 			for (var i = 0; i < _storage.length; i++) {
 				if (_storage[i].key === key) {
 					var value = _storage[i].value;
-					delete _storage[i];
+					_storage.splice(i, 1);
 					
-					if (typeof options.silent == 'undefined' || options.silent == false) {
+					if (typeof options.silent === 'undefined' || false === options.silent) {
 						this.trigger(EVENT_REMOVE, key, value);
 					}
 				}
@@ -487,13 +536,13 @@
 		};
 		
 		this.purge = function(options){
-			_storage = [];
 			options || (options = {});
+			_storage = [];
 			
-			if (typeof options.silent == 'undefined' || options.silent == false) {
+			if (typeof options.silent === 'undefined' || false === options.silent) {
 				this.trigger(EVENT_PURGE);
 			}
-			
+
 			return this;
 		};
 		
@@ -503,7 +552,6 @@
 			for (var i = 0; i < _storage.length; i++) {
 				if (_storage[i].key === key) {
 					this.cancelStorageGarbage(_storage[i].timeoutID);
-					
 					// refresh key in cache
 					_storage[i].lifetime = lifetime;
 					_storage[i].timeoutID = this.scheduleStorageGarbage(key, _storage[i].value, lifetime);
@@ -525,11 +573,6 @@
 	 */
 	var StorageCache = function(size, lifetime, _storage){
 		Cache.call(this, size, lifetime);
-		
-//		/**
-//		 * @var Storage _storage
-//		 */
-//		var _storage = storage;
 		
 		this.initialize = function(){
 			var self = this;
@@ -554,7 +597,7 @@
 		};
 		
 		// Initialze Cache Context
-		if (arguments.length == 3) {
+		if (arguments.length === 3) {
 			this.initialize();
 		}
 		
@@ -593,13 +636,13 @@
 			if (item) {
 				item = JSON.parse(item);
 				
-				if (typeof options.silent == 'undefined' || options.silent == false) {
+				if (typeof options.silent === 'undefined' || options.silent == false) {
 					this.trigger(EVENT_READ, key, item.value);
 				}
 				
 				return item.value;
 			}
-			return (typeof defaultValue == 'undefined') ? null : defaultValue;
+			return (typeof defaultValue === 'undefined') ? null : defaultValue;
 		};
 		
 		this.readAll = function(){
@@ -626,7 +669,7 @@
 						self.cancelStorageGarbage(item.timeoutID);
 						
 						// refresh key in cache
-						if (typeof lifetime == 'number') {
+						if (typeof lifetime === 'number') {
 							item.lifetime = self.convertLifetime(lifetime);
 						}
 						
@@ -635,12 +678,11 @@
 						item.timeoutID = self.scheduleStorageGarbage(key, value, item.lifetime);
 						_storage.setItem(key, JSON.stringify(item));
 						
-						if (typeof options.silent == 'undefined' || options.silent == false) {
+						if (typeof options.silent === 'undefined' || false === options.silent) {
 							// execute register callback
 							self.trigger(EVENT_WRITE, key, value);
 							self.trigger(EVENT_WRITE_UPDATE, key, value);
 						}
-						
 						return true;
 					}
 					return false;
@@ -665,7 +707,7 @@
 				timeoutID: self.scheduleStorageGarbage(key, value, lifetime)
 			}));
 			
-			if (typeof options.silent == 'undefined' || options.silent == false) {
+			if (typeof options.silent === 'undefined' || false === options.silent) {
 				// execute register callback
 				this.trigger(EVENT_WRITE, key, value);
 				this.trigger(EVENT_WRITE_CREATE, key, value);
@@ -681,7 +723,7 @@
 			if (value) {
 				_storage.removeItem(key);
 				
-				if (typeof options.silent == 'undefined' || options.silent == false) {
+				if (typeof options.silent === 'undefined' || false === options.silent) {
 					this.trigger(EVENT_REMOVE, key, value);
 				}
 			}
@@ -693,7 +735,7 @@
 			options || (options = {});
 			_storage.clear();
 			
-			if (typeof options.silent == 'undefined' || options.silent == false) {
+			if (typeof options.silent === 'undefined' || false === options.silent) {
 				this.trigger(EVENT_PURGE);
 			}
 			

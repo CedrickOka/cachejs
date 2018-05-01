@@ -5,11 +5,11 @@
 
 Cachejs is a library that will allow you to set up a private and powerful cache system in your javascript application.
 
+[![GitHub version](https://badge.fury.io/gh/CedrickOka%2Fcachejs.svg)](https://badge.fury.io/gh/CedrickOka%2Fcachejs)
 [![GitHub issues](https://img.shields.io/github/issues/CedrickOka/cachejs.svg)](https://github.com/CedrickOka/cachejs/issues)
 [![GitHub forks](https://img.shields.io/github/forks/CedrickOka/cachejs.svg)](https://github.com/CedrickOka/cachejs/network)
 [![GitHub stars](https://img.shields.io/github/stars/CedrickOka/cachejs.svg)](https://github.com/CedrickOka/cachejs/stargazers)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/CedrickOka/cachejs/master/LICENSE)
-[![GitHub version](https://badge.fury.io/gh/CedrickOka%2Fcachejs.svg)](https://badge.fury.io/gh/CedrickOka%2Fcachejs)
 
 ## Installing / Getting started
 
@@ -73,6 +73,8 @@ define(['cache'], function (Cache) {
     }
 });
 ```
+## Latest updates
+For notes about latest changes please read [CHANGELOG](CHANGELOG.md).
 
 ## Versioning
 
