@@ -1,6 +1,10 @@
 Changelog
 =========
 
+#### 1.0.2
+
+* Updated `bower.json` file definition.
+
 #### 1.0.1 (2018-05-01)
 
 * Improved abstract methods definition.

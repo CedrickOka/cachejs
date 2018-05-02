@@ -63,15 +63,6 @@
 		_callbacks[EVENT_REMOVE] = [];
 		_callbacks[EVENT_PURGE] = [];
 		_callbacks[EVENT_GARBAGE] = [];
-
-		/**
-		 * Get event name in namespace
-		 * 
-		 * @return string
-		 */
-		var __getEventName = function(eventName){
-			return _namespace + ':' + eventName;
-		};
 		
 		/**
 		 * Get cache size

@@ -2,7 +2,8 @@
   "name": "coka-cachejs",
   "description": "Cachejs is a library that will allow you to set up a private and powerful cache system in your javascript application.",
   "main": [
-    "cache.js"
+    "cache.js",
+    "cache.min.js"
   ],
   "moduleType": [
     "amd",
