@@ -25,7 +25,8 @@
 				}
 			];
 
-			var cache = new Cache.SessionStorage(25, 10);
+			var memoryCache = new Cache.Memory(25, 0);
+			var cache = new Cache.SessionStorage(25, 0);
 
 			cache.onRemove(function(key, data){
 				alert('key: ' + key + ' has been removed!');
@@ -42,11 +43,14 @@
 				alert('Il ne faudra pas lancer cet alerte.');
 			};
 
+			memoryCache.write('todos', todos);
+			alert(memoryCache.read('todos'));
+			alert(cache.read('todos'));
+
 			cache.on('cache:garbage', callback);
 			cache.off('cache:garbage', callback);
 			cache.onGarbage(callback);
 			cache.offGarbage(callback);
-
 			cache.write('todos', todos);
 		</script>
 	</body>

@@ -116,7 +116,7 @@
 
 		/**
 		 * Get cache keys prefix
-		  *
+		 *
 		 * @return string The keys prefix
 		 */
 		this.getPrefix = function(){
@@ -125,11 +125,21 @@
 
 		/**
 		 * Get cache store keys prefix
-		  *
+		 *
 		 * @return string The keys prefix
 		 */
 		this.getStoreKey = function(key){
-			return _prefix + key;
+			return _prefix + '.' + key;
+		};
+
+		this.getDefaultsOptions = function(options){
+			options || (options = {});
+
+			if (typeof options.silent === 'undefined') {
+				options.silent = false;
+			}
+
+			return options;
 		};
 		
 		/**
@@ -418,7 +428,7 @@
 		
 		this.has = function(key){
 			for (var i = 0; i < _storage.length; i++) {
-				if (_storage[i].key === key) {
+				if (key === _storage[i].key) {
 					return true;
 				}
 			}
@@ -435,22 +445,22 @@
 		};
 		
 		this.read = function(key, defaultValue, options){
-			options || (options = {});
 			for (var i = 0; i < _storage.length; i++) {
-				if (_storage[i].key === key) {
-					if (typeof options.silent === 'undefined' || false === options.silent) {
+				if (key === _storage[i].key) {
+					if (false === this.getDefaultsOptions(options).silent) {
 						this.trigger(EVENT_READ, key, _storage[i].value);
 					}
-					
+
 					return _storage[i].value;
 				}
 			}
 
-			return (typeof defaultValue === 'undefined') ? null : defaultValue;
+			return defaultValue;
 		};
 		
 		this.readAll = function(){
 			var values = {};
+
 			for (var i = 0; i < _storage.length; i++) {
 				values[_storage[i].key] = _storage[i].value;
 			}
@@ -459,23 +469,16 @@
 		};
 		
 		this.write = function(key, value, lifetime, options){
-			options || (options = {});
-			
 			// Update previews cache entry
 			for (var i = 0; i < _storage.length; i++) {
-				if (_storage[i].key === key) {
+				if (key === _storage[i].key) {
 					this.cancelStorageGarbage(_storage[i].timeoutID);
 					
-					// refresh key in cache
-					if (typeof lifetime == 'number') {
-						_storage[i].lifetime = this.convertLifetime(lifetime);
-					}
-					
 					_storage[i].value = value;
+					_storage[i].lifetime = this.convertLifetime(lifetime);
 					_storage[i].timeoutID = this.scheduleStorageGarbage(key, value, _storage[i].lifetime);
 					
-					if (typeof options.silent === 'undefined' || options.silent == false) {
-						// execute register callback
+					if (false === this.getDefaultsOptions(options).silent) {
 						this.trigger(EVENT_WRITE, key, value);
 						this.trigger(EVENT_WRITE_UPDATE, key, value);
 					}
@@ -500,8 +503,7 @@
 				timeoutID: this.scheduleStorageGarbage(key, value, lifetime)
 			});
 			
-			if (typeof options.silent === 'undefined' || options.silent == false) {
-				// execute register callback
+			if (false === this.getDefaultsOptions(options).silent) {
 				this.trigger(EVENT_WRITE, key, value);
 				this.trigger(EVENT_WRITE_CREATE, key, value);
 			}
@@ -510,14 +512,12 @@
 		};
 		
 		this.remove = function(key, options){
-			options || (options = {});
-			
 			for (var i = 0; i < _storage.length; i++) {
-				if (_storage[i].key === key) {
+				if (key === _storage[i].key) {
 					var value = _storage[i].value;
 					_storage.splice(i, 1);
 					
-					if (typeof options.silent === 'undefined' || false === options.silent) {
+					if (false === this.getDefaultsOptions(options).silent) {
 						this.trigger(EVENT_REMOVE, key, value);
 					}
 				}
@@ -527,10 +527,9 @@
 		};
 		
 		this.purge = function(options){
-			options || (options = {});
 			_storage = [];
 			
-			if (typeof options.silent === 'undefined' || false === options.silent) {
+			if (false === this.getDefaultsOptions(options).silent) {
 				this.trigger(EVENT_PURGE);
 			}
 
@@ -538,14 +537,12 @@
 		};
 		
 		this.setCacheLifetime = function(key, lifetime){
-			lifetime = this.convertLifetime(lifetime);
-			
 			for (var i = 0; i < _storage.length; i++) {
-				if (_storage[i].key === key) {
+				if (key === _storage[i].key) {
 					this.cancelStorageGarbage(_storage[i].timeoutID);
-					// refresh key in cache
-					_storage[i].lifetime = lifetime;
-					_storage[i].timeoutID = this.scheduleStorageGarbage(key, _storage[i].value, lifetime);
+
+					_storage[i].lifetime = this.convertLifetime(lifetime);
+					_storage[i].timeoutID = this.scheduleStorageGarbage(key, _storage[i].value, _storage[i].lifetime);
 					break;
 				}
 			}
@@ -564,32 +561,33 @@
 	 */
 	var StorageCache = function(size, lifetime, _storage){
 		Cache.call(this, size, lifetime);
+
+		var __get = function(key) {
+			var data = _storage.getItem(key);
+			return data !== null ? JSON.parse(data) : null;
+		};
+
+		var __set = function(key, value) {
+			_storage.setItem(key, JSON.stringify(value));
+		};
 		
-		this.initialize = function(){
-			var self = this;
-			var currentTime = (new Date()).getTime();
-			
-			for (var i = 0; i < _storage.length; i++) {
-				(function(key){
-					var item = JSON.parse(_storage.getItem(key));
+		if (typeof _storage !== 'undefined') {
+			(function(self){
+				var currentTime = (new Date()).getTime();
+				
+				for (var i = 0; i < _storage.length; i++) {
+					var item = __get(_storage.key(i));
 					
 					if (item.lifetime > 0) {
 						if (currentTime >= (item.createdAt + item.lifetime)) {
 							_storage.removeItem(key);
-							
 						} else {
-							item.createdAt = currentTime;
-							item.timeoutID = self.scheduleStorageGarbage(key, item.value, (item.lifetime - (currentTime - item.createdAt)));
-							_storage.setItem(key, JSON.stringify(item));
+							item.timeoutID = self.scheduleStorageGarbage(key, item.value, (currentTime <= item.createdAt ? item.lifetime : item.lifetime - (currentTime - item.createdAt)));
+							__set(key, item);
 						}
 					}
-				})(_storage.key(i));
-			}			
-		};
-		
-		// Initialze Cache Context
-		if (arguments.length === 3) {
-			this.initialize();
+				}
+			})(this);
 		}
 		
 		this.count = function(){
@@ -598,42 +596,36 @@
 		
 		this.has = function(key){			
 			for (var i = 0; i < _storage.length; i++) {
-				if ((function(itemKey){
-					return key === itemKey;
-				})(_storage.key(i))) {
+				if (key === _storage.key(i)) {
 					return true;
 				}
 			}
-			
 			return false;
 		};
 		
 		this.hasValue = function(value){
 			for (var i = 0; i < _storage.length; i++) {
-				if ((function(key){					
-					return value === JSON.parse(_storage.getItem(key)).value;
-				})(_storage.key(i))) {
+				if (value === __get(_storage.key(i)).value) {
 					return true;
 				}
 			}
-			
 			return false;
 		};
 		
 		this.read = function(key, defaultValue, options){
-			options || (options = {});
+			options = this.getDefaultsOptions(options);
 			var item = _storage.getItem(key);
 			
 			if (item) {
 				item = JSON.parse(item);
 				
-				if (typeof options.silent === 'undefined' || options.silent == false) {
+				if (false === options.silent) {
 					this.trigger(EVENT_READ, key, item.value);
 				}
 				
 				return item.value;
 			}
-			return (typeof defaultValue === 'undefined') ? null : defaultValue;
+			return defaultValue;
 		};
 		
 		this.readAll = function(){
@@ -641,7 +633,7 @@
 			
 			for (var i = 0; i < _storage.length; i++) {
 				(function(key){
-					attributes[key] = JSON.parse(_storage.getItem(key)).value;
+					attributes[key] = __get(key).value;
 				})(_storage.key(i));
 			}
 			
@@ -649,35 +641,24 @@
 		};
 		
 		this.write = function(key, value, lifetime, options){
-			var self = this;
-			options || (options = {});
-			
 			// update previews cache entry
 			for (var i = 0; i < _storage.length; i++) {
-				if ((function(itemKey){
-					if (key === itemKey) {
-						var item = JSON.parse(_storage.getItem(key));
-						self.cancelStorageGarbage(item.timeoutID);
-						
-						// refresh key in cache
-						if (typeof lifetime === 'number') {
-							item.lifetime = self.convertLifetime(lifetime);
-						}
-						
-						item.value = value;
-						item.createdAt = (new Date()).getTime();
-						item.timeoutID = self.scheduleStorageGarbage(key, value, item.lifetime);
-						_storage.setItem(key, JSON.stringify(item));
-						
-						if (typeof options.silent === 'undefined' || false === options.silent) {
-							// execute register callback
-							self.trigger(EVENT_WRITE, key, value);
-							self.trigger(EVENT_WRITE_UPDATE, key, value);
-						}
-						return true;
+				if (key === _storage.key(i)) {
+					var item = __get(key);
+					this.cancelStorageGarbage(item.timeoutID);
+					
+					item.value = value;
+					item.createdAt = (new Date()).getTime();
+					item.lifetime = this.convertLifetime(lifetime);
+					item.timeoutID = this.scheduleStorageGarbage(key, value, item.lifetime);
+
+					__set(key, item);
+					
+					if (false === this.getDefaultsOptions(options).silent) {
+						this.trigger(EVENT_WRITE, key, value);
+						this.trigger(EVENT_WRITE_UPDATE, key, value);
 					}
-					return false;
-				})(_storage.key(i)) === true) {
+
 					return this;
 				}
 			}
@@ -695,11 +676,10 @@
 				value: value,
 				lifetime: lifetime,
 				createdAt: (new Date()).getTime(),
-				timeoutID: self.scheduleStorageGarbage(key, value, lifetime)
+				timeoutID: this.scheduleStorageGarbage(key, value, lifetime)
 			}));
 			
-			if (typeof options.silent === 'undefined' || false === options.silent) {
-				// execute register callback
+			if (false === this.getDefaultsOptions(options).silent) {
 				this.trigger(EVENT_WRITE, key, value);
 				this.trigger(EVENT_WRITE_CREATE, key, value);
 			}
@@ -708,13 +688,12 @@
 		};
 		
 		this.remove = function(key, options){
-			options || (options = {});
-			var value = this.read(key, undefined, true);
+			var value = this.read(key, undefined, {silent: true});
 			
 			if (value) {
 				_storage.removeItem(key);
 				
-				if (typeof options.silent === 'undefined' || false === options.silent) {
+				if (false === this.getDefaultsOptions(options).silent) {
 					this.trigger(EVENT_REMOVE, key, value);
 				}
 			}
@@ -723,10 +702,9 @@
 		};
 		
 		this.purge = function(options){
-			options || (options = {});
 			_storage.clear();
 			
-			if (typeof options.silent === 'undefined' || false === options.silent) {
+			if (false === this.getDefaultsOptions(options).silent) {
 				this.trigger(EVENT_PURGE);
 			}
 			
@@ -734,27 +712,20 @@
 		};
 		
 		this.setCacheLifetime = function(key, lifetime){
-			lifetime = this.convertLifetime(lifetime);
-			
 			for (var i = 0; i < _storage.length; i++) {
-				if ((function(self, itemKey){					
-					if (key === itemKey) {
-						var item = JSON.parse(_storage.getItem(key));
-						self.cancelStorageGarbage(item.timeoutID);
-						
-						// refresh key in cache
-						item.lifetime = lifetime;
-						item.createdAt = (new Date()).getTime();
-						item.timeoutID = self.scheduleStorageGarbage(key, item.value, lifetime);
-						_storage.setItem(key, JSON.stringify(item));
-						
-						return true;
-					}
-					return false;
-				})(this, _storage.key(i)) === true) {
+				if (key === _storage.key(i)) {
+					var item = __get(key);
+					this.cancelStorageGarbage(item.timeoutID);
+
+					item.createdAt = (new Date()).getTime();
+					item.lifetime = this.convertLifetime(lifetime);
+					item.timeoutID = this.scheduleStorageGarbage(key, item.value, item.lifetime);
+
+					__set(key, item);
 					break;
 				}
 			}
+
 			return this;
 		};
 	};
