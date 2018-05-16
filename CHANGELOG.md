@@ -1,6 +1,10 @@
 Changelog
 =========
 
+#### 1.1.4
+
+* Fixed bug in `Cache.scheduleStorageGarbage()`.
+
 #### 1.1.3
 
 * Updated `bower.json` file definition.

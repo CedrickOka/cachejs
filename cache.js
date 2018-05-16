@@ -168,7 +168,7 @@
 			
 			if (lifetime > 0) {
 				timeoutID = setTimeout(function(){
-					self.remove(this.generateStoreKey(key), {silent: true});
+					self.remove(self.generateStoreKey(key), {silent: true});
 					self.trigger(EVENT_GARBAGE, key, value);
 				}, lifetime);
 			}
