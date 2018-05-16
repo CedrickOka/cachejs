@@ -15,7 +15,7 @@
     }
 })(this, function(){
 	'use strict';
-	
+
 	var EVENT_READ = 'cache:read';
 	var EVENT_WRITE = 'cache:write';
 	var EVENT_WRITE_CREATE = 'cache:write:create';
@@ -34,9 +34,9 @@
 	 * 
 	 * @param number size | Cache size
 	 * @param number lifetime | Cache time to live in seconds
-	 * @param string prefix | Cache key prefix
+	 * @param string namespace | Cache key namespace
 	 */
-	var Cache = function(size, lifetime, prefix){
+	var Cache = function(size, lifetime, namespace){
 		/**
 		 * @var number _size
 		 */
@@ -48,9 +48,11 @@
 		var _lifetime = (typeof lifetime === 'number' && lifetime > 0) ? (lifetime * LIFETIME_UNITS) : 0;
 		
 		/**
-		 * @var string _prefix
+		 * @var string _namespace
 		 */
-		var _prefix = prefix || '';
+		var _namespace = namespace || '';
+
+		var STORE_KEY_PATTERN = '^' + _namespace + '\\.?(.+)$';
 		
 		/**
 		 * @var array Events handler collection
@@ -115,21 +117,32 @@
 		};
 
 		/**
-		 * Get cache keys prefix
-		 *
-		 * @return string The keys prefix
+		 * Get cache keys namespace
+		 * 
+		 * @return string The keys namespace
 		 */
-		this.getPrefix = function(){
-			return _prefix;
+		this.getNamespace = function(){
+			return _namespace;
 		};
 
 		/**
-		 * Get cache store keys prefix
-		 *
-		 * @return string The keys prefix
+		 * @return boolean
 		 */
-		this.getStoreKey = function(key){
-			return _prefix + '.' + key;
+		this.isInNamespace = function(storeKey){
+			return '' === _namespace ? true : (new RegExp(STORE_KEY_PATTERN)).test(storeKey);
+		};
+
+		/**
+		 * Get cache store keys namespace
+		 * 
+		 * @return string The keys namespace
+		 */
+		this.generateStoreKey = function(key){
+			return '' === _namespace ? key : _namespace + '.' + key;
+		};
+
+		this.retrieveKeyFromStoreKey = function(storeKey){
+			return '' === _namespace ? storeKey : (storeKey.match(new RegExp(STORE_KEY_PATTERN)))[1];
 		};
 
 		this.getDefaultsOptions = function(options){
@@ -145,7 +158,7 @@
 		/**
 		 * Schedule the garbage of key cache with cache limit time
 		 * 
-		 * @param string key
+		 * @param string storeKey
 		 * @param number lifetime in milliseconds
 		 * @return number
 		 */
@@ -155,7 +168,7 @@
 			
 			if (lifetime > 0) {
 				timeoutID = setTimeout(function(){
-					self.remove(key, {silent: true});
+					self.remove(this.generateStoreKey(key), {silent: true});
 					self.trigger(EVENT_GARBAGE, key, value);
 				}, lifetime);
 			}
@@ -407,7 +420,6 @@
 		
 	/**
 	 * Memory Cache
-	 * 
 	 * Permit of store data in Array
 	 * 
 	 * @param number size | Cache size
@@ -421,7 +433,7 @@
 		 * @var array _storage
 		 */
 		var _storage = [];
-		
+
 		this.count = function(){
 			return _storage.length;
 		};
@@ -558,32 +570,37 @@
 	 * 
 	 * @param number size | Cache size
 	 * @param number lifetime | Cache time to live in seconds
+	 * @param string namespace | Cache namespace
+	 * @param Storage _storage | Cache storage
 	 */
-	var StorageCache = function(size, lifetime, _storage){
-		Cache.call(this, size, lifetime);
+	var StorageCache = function(size, lifetime, namespace, _storage){
+		Cache.call(this, size, lifetime, namespace);
 
-		var __get = function(key) {
-			var data = _storage.getItem(key);
+		var __get = function(storeKey) {
+			var data = _storage.getItem(storeKey);
 			return data !== null ? JSON.parse(data) : null;
 		};
 
-		var __set = function(key, value) {
-			_storage.setItem(key, JSON.stringify(value));
+		var __set = function(storeKey, value) {
+			_storage.setItem(storeKey, JSON.stringify(value));
 		};
 		
 		if (typeof _storage !== 'undefined') {
 			(function(self){
-				var currentTime = (new Date()).getTime();
+				var storeKey, item, 
+					currentTime = (new Date()).getTime();
 				
 				for (var i = 0; i < _storage.length; i++) {
-					var item = __get(_storage.key(i));
-					
-					if (item.lifetime > 0) {
-						if (currentTime >= (item.createdAt + item.lifetime)) {
-							_storage.removeItem(key);
-						} else {
-							item.timeoutID = self.scheduleStorageGarbage(key, item.value, (currentTime <= item.createdAt ? item.lifetime : item.lifetime - (currentTime - item.createdAt)));
-							__set(key, item);
+					if (true === self.isInNamespace((storeKey = _storage.key(i)))) {
+						item = __get(storeKey);
+
+						if (item.lifetime > 0) {
+							if (currentTime >= (item.createdAt + item.lifetime)) {
+								_storage.removeItem(storeKey);
+							} else {
+								item.timeoutID = self.scheduleStorageGarbage(item.originalKey, item.value, (currentTime <= item.createdAt ? item.lifetime : item.lifetime - (currentTime - item.createdAt)));
+								__set(storeKey, item);
+							}
 						}
 					}
 				}
@@ -594,9 +611,11 @@
 			return _storage.length;
 		};
 		
-		this.has = function(key){			
+		this.has = function(key){
+			var storeKey = this.generateStoreKey(key);
+
 			for (var i = 0; i < _storage.length; i++) {
-				if (key === _storage.key(i)) {
+				if (storeKey === _storage.key(i)) {
 					return true;
 				}
 			}
@@ -613,38 +632,43 @@
 		};
 		
 		this.read = function(key, defaultValue, options){
-			options = this.getDefaultsOptions(options);
-			var item = _storage.getItem(key);
+			var item = _storage.getItem(this.generateStoreKey(key));
 			
-			if (item) {
-				item = JSON.parse(item);
-				
-				if (false === options.silent) {
-					this.trigger(EVENT_READ, key, item.value);
-				}
-				
-				return item.value;
+			if (null === item) {
+				return defaultValue;
 			}
-			return defaultValue;
+
+			item = JSON.parse(item);
+			
+			if (false === this.getDefaultsOptions(options).silent) {
+				this.trigger(EVENT_READ, key, item.value);
+			}
+			
+			return item.value;
 		};
 		
 		this.readAll = function(){
 			var attributes = {};
 			
 			for (var i = 0; i < _storage.length; i++) {
-				(function(key){
-					attributes[key] = __get(key).value;
-				})(_storage.key(i));
+				(function(self, storeKey){
+					if (true === self.isInNamespace(storeKey)) {
+						var item = __get(storeKey);
+						attributes[item.originalKey] = item.value;
+					}
+				})(this, _storage.key(i));
 			}
 			
 			return attributes;
 		};
 		
 		this.write = function(key, value, lifetime, options){
-			// update previews cache entry
+			var storeKey = this.generateStoreKey(key);
+
+			// Update previews cache entry
 			for (var i = 0; i < _storage.length; i++) {
-				if (key === _storage.key(i)) {
-					var item = __get(key);
+				if (storeKey === _storage.key(i)) {
+					var item = __get(storeKey);
 					this.cancelStorageGarbage(item.timeoutID);
 					
 					item.value = value;
@@ -652,7 +676,7 @@
 					item.lifetime = this.convertLifetime(lifetime);
 					item.timeoutID = this.scheduleStorageGarbage(key, value, item.lifetime);
 
-					__set(key, item);
+					__set(storeKey, item);
 					
 					if (false === this.getDefaultsOptions(options).silent) {
 						this.trigger(EVENT_WRITE, key, value);
@@ -672,12 +696,13 @@
 			}
 			
 			// store key in cache
-			_storage.setItem(key, JSON.stringify({
+			__set(storeKey, {
 				value: value,
+				originalKey: key,
 				lifetime: lifetime,
 				createdAt: (new Date()).getTime(),
 				timeoutID: this.scheduleStorageGarbage(key, value, lifetime)
-			}));
+			});
 			
 			if (false === this.getDefaultsOptions(options).silent) {
 				this.trigger(EVENT_WRITE, key, value);
@@ -690,8 +715,8 @@
 		this.remove = function(key, options){
 			var value = this.read(key, undefined, {silent: true});
 			
-			if (value) {
-				_storage.removeItem(key);
+			if (undefined !== value) {
+				_storage.removeItem(this.generateStoreKey(key));
 				
 				if (false === this.getDefaultsOptions(options).silent) {
 					this.trigger(EVENT_REMOVE, key, value);
@@ -712,16 +737,18 @@
 		};
 		
 		this.setCacheLifetime = function(key, lifetime){
+			var storeKey = this.generateStoreKey(key);
+
 			for (var i = 0; i < _storage.length; i++) {
-				if (key === _storage.key(i)) {
-					var item = __get(key);
+				if (storeKey === _storage.key(i)) {
+					var item = __get(storeKey);
 					this.cancelStorageGarbage(item.timeoutID);
 
 					item.createdAt = (new Date()).getTime();
 					item.lifetime = this.convertLifetime(lifetime);
 					item.timeoutID = this.scheduleStorageGarbage(key, item.value, item.lifetime);
 
-					__set(key, item);
+					__set(storeKey, item);
 					break;
 				}
 			}
@@ -737,9 +764,10 @@
 	 * 
 	 * @param number size | Cache size
 	 * @param number lifetime | Cache time to live in seconds
+	 * @param string namespace | Cache namespace
 	 */
-	var SessionStorageCache = function(size, lifetime){
-		StorageCache.call(this, size, lifetime, window.sessionStorage);
+	var SessionStorageCache = function(size, lifetime, namespace){
+		StorageCache.call(this, size, lifetime, namespace, window.sessionStorage);
 	};
 	
 	/**
@@ -749,9 +777,10 @@
 	 * 
 	 * @param number size | Cache size
 	 * @param number lifetime | Cache time to live in seconds
+	 * @param string namespace | Cache namespace
 	 */
-	var LocalStorageCache = function(size, lifetime){
-		StorageCache.call(this, size, lifetime, window.localStorage);
+	var LocalStorageCache = function(size, lifetime, namespace){
+		StorageCache.call(this, size, lifetime, namespace, window.localStorage);
 	};
 	
 	MemoryCache.prototype = new Cache;

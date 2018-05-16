@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>CacheJs - Javascript librairy for web application cache.</title>
+
+		<!--Default installation-->
+		<link rel="stylesheet" href="lib/jquery/jquery-ui.min.css" type="text/css"/>
+		<link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css" type="text/css"/>
+		<link rel="stylesheet" href="lib/lobilist/css/lobilist.css" type="text/css"/>
+
+		<!--Installation using bower. Preferred!!! -->
+		<!--<link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css"/>-->
+		<!--<link rel="stylesheet" href="bower_components/jquery-ui/themes/ui-lightness/jquery-ui.min.css"/>-->
+		<!--<link rel="stylesheet" href="bower_components/lobilist/dist/lobilist.min.css"/>-->
+	</head>
+	<body>
+		<div class="container">
+			<div id="lobilist">
+				<!--Examples-->
+				<div id="lobilist-examples">
+					<h1>Examples</h1>
+					<hr>
+					<!--Basic example-->
+					<div>
+						<div class="bs-example">
+							<h4>Basic example</h4>
+							<div id="todo-lists-basic-demo"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!--Default installation-->
+		<script src="lib/jquery/jquery.min.js" type="text/javascript"></script>
+		<script src="lib/jquery/jquery-ui.min.js" type="text/javascript"></script>
+		<script src="lib/jquery/jquery.ui.touch-punch-improved.js" type="text/javascript"></script>
+		<script src="lib/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+		<script src="lib/lobilist/js/lobilist.js" type="text/javascript"></script>
+		<script src="../cache.js" type="text/javascript"></script>
+
+		<!--Installation using bower. Preferred!!! -->
+		<!--<script src="bower_components/jquery/dist/jquery.min.js" type="text/javascript"></script>-->
+		<!--<script src="bower_components/jquery-ui/jquery-ui.min.js" type="text/javascript"></script>-->
+		<!--<script src="bower_components/jquery-ui-touch-punch-improved/jquery.ui.touch-punch-improved.js" type="text/javascript"></script>-->
+		<!--<script src="bower_components/bootstrap/dist/js/bootstrap.min.js" type="text/javascript"></script>-->
+		<!--<script src="bower_components/lobilist/dist/lobilist.min.js" type="text/javascript"></script>-->
+
+		<script src="lib/lobibox/js/lobibox.min.js" type="text/javascript"></script>
+		<script type="text/javascript">
+			$(function(){
+				var cacheLists = new Cache.SessionStorage(25, 0, 'lists');
+				var cacheItems = new Cache.SessionStorage(100, 0, 'items');
+
+				if (cacheLists.count() === 0) {
+					cacheLists.write('todo', {
+						id: 'todo',
+						title: 'TODO',
+						defaultStyle: 'lobilist-info',
+					});
+				}
+
+				var lists = cacheLists.readAll();
+				var items = cacheItems.readAll();
+
+				for (item in items) {
+					if (typeof lists[items[item].listId].items === 'undefined') {
+						lists[items[item].listId].items = [];
+					}
+					
+					lists[items[item].listId].items.push(items[item]);
+				}
+
+				$('#todo-lists-basic-demo').lobiList({
+					afterListAdd: function(){
+						console.log(arguments);
+					},
+					afterListRemove: function(){
+						console.log(arguments);
+					},
+					afterItemAdd: function(list, item){
+						cacheItems.write(item.id, item);
+					},
+					afterItemUpdate: function(list, item){
+						var oldItem = cacheItems.read(item.id);
+						oldItem.id = item.id;
+						oldItem.title = item.title;
+						oldItem.dueDate = item.dueDate;
+						oldItem.description = item.description;
+						cacheItems.write(item.id, oldItem);
+					},
+					afterItemDelete: function(list, item){
+						cacheItems.remove(item.id);
+					},
+					lists: Object.values(lists)
+				});
+			});
+		</script>
+	</body>
+</html>

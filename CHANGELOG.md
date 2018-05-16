@@ -1,6 +1,11 @@
 Changelog
 =========
 
+#### 1.1.0
+
+* Added cache namespace supports for session and local storage.
+* Added an example of using the library.
+
 #### 1.0.3
 
 * Improves.
