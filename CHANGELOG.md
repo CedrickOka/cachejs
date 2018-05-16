@@ -1,6 +1,10 @@
 Changelog
 =========
 
+#### 1.1.1
+
+* Updated mimified version.
+
 #### 1.1.0
 
 * Added cache namespace supports for session and local storage.
