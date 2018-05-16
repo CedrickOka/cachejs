@@ -21,10 +21,12 @@
   "ignore": [
     "*",
     "**/.*",
+    "!/LICENSE",
     "!/README.*",
-    "!/LICENSE.*",
     "!/CHANGELOG.*",
     "!/CONTRIBUTING.*",
+    "!/images/",
+    "!/demo/",
     "test",
     "tests",
     "node_modules",

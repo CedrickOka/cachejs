@@ -22,7 +22,7 @@ Cache.js is available on [github.com](https://github.com/CedrickOka/cachejs).
 ```html
 <script type="text/javascript" src="cache.js"></script>
 <script>
-    var cache = new Cache.Memory(25, 300);
+    var cache = new Cache.Memory(25, 300, 'default');
 
     cache.onWrite(function(key, data){
     	console.log('An entry has been added to the cache with the key "' + key + '" : ');
@@ -53,7 +53,7 @@ require.config({
 });
 
 define(['cache'], function (Cache) {
-    var cache = new Cache.Memory(25, 300);
+    var cache = new Cache.Memory(25, 300, 'default');
 
     cache.onWrite(function(key, data){
     	console.log('An entry has been added to the cache with the key "' + key + '" : ');
