@@ -1,6 +1,10 @@
 Changelog
 =========
 
+#### 1.1.3
+
+* Updated `bower.json` file definition.
+
 #### 1.1.2
 
 * Updated `bower.json` file definition.
