@@ -24,6 +24,7 @@
     "!/README.*",
     "!/CHANGELOG.*",
     "!/CONTRIBUTING.*",
+    "!/cache.min.js",
     "!/images",
     "!/demo",
     "test",
