@@ -14,7 +14,7 @@ Cachejs is a library that will allow you to set up a private and powerful cache 
 ## Installing / Getting started
 
 Source can be loaded via bower or downloaded from this [repo](https://github.com/CedrickOka/cachejs).
-If you don't use a module loader it will be added to window.Trait
+If you don't use a module loader it will be added to window.Cache
 
 ```bash
 # bower
