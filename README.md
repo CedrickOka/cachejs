@@ -19,6 +19,9 @@ If you don't use a module loader it will be added to window.Cache
 ```bash
 # bower
 $ bower install coka-cachejs
+
+# yarn
+$ yarn add coka-cachejs
 ```
 
 If you want to try the sample codes below, just open your browser's console and enter them.
