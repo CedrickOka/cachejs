@@ -1,6 +1,6 @@
 {
   "name": "coka-cachejs",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Cachejs is a library that will allow you to set up a private and powerful cache system in your javascript application.",
   "main": "cache.js",
   "repository": "https://github.com/CedrickOka/cachejs.git",
@@ -13,5 +13,12 @@
     "SessionStorage"
   ],
   "homepage": "https://github.com/CedrickOka/cachejs",
-  "files": ["demo/*", "images/*", "cache*.js", "CHANGELOG.*", "LICENSE", "README.*"]
+  "files": [
+    "demo/*",
+    "images/*",
+    "cache*.js",
+    "CHANGELOG.*",
+    "LICENSE",
+    "README.*"
+  ]
 }
