@@ -29,7 +29,7 @@ If you want to try the sample codes below, just open your browser's console and 
 ### Browser
 
 ```html
-<script type="text/javascript" src="cache.js"></script>
+<script type="text/javascript" src="cache.min.js"></script>
 <script>
     var cache = new Cache.Memory(25, 300, 'default');
 
@@ -57,7 +57,7 @@ If you want to try the sample codes below, just open your browser's console and 
 ```javascript
 require.config({
 	paths: {
-		cache: 'cache.js',
+		cache: 'cache.min',
 	}
 });
 
